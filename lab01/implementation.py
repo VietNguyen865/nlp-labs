@@ -1,140 +1,311 @@
-import numpy as np
-import re
 import math
-from sklearn.feature_extraction.text import TfidfVectorizer
+import re
+from collections import Counter, defaultdict
+import numpy as np
+import unicodedata
+
+class SimpleTfidf:
+    TOKEN_PATTERN = re.compile(r"\b\w+\b")
+
+    def tokenize(self, text):
+        return self.TOKEN_PATTERN.findall(text.lower())
+
+    def build_vocabulary(self, documents):
+        vocabulary = set()
+        for document in documents:
+            vocabulary.update(self.tokenize(document))
+        return sorted(vocabulary)
+
+    def compute_counts(self, document, vocabulary):
+        tokens = self.tokenize(document)
+        token_counts = defaultdict(int)
+
+        for token in tokens:
+            token_counts[token] += 1
+
+        return np.array([token_counts.get(term, 0) for term in vocabulary], dtype=float)
+
+    def compute_sparse_counts(self, document, term_to_index):
+        tokens = self.tokenize(document)
+        token_counts = defaultdict(int)
+
+        for token in tokens:
+            token_counts[token] += 1
+
+        return {
+            term_to_index[term]: count
+            for term, count in token_counts.items()
+            if term in term_to_index
+        }
+
+    def compute_tf(self, counts):
+        counts = np.asanyarray(counts, dtype=float)
+        total = counts.sum()
+        if total == 0:
+            return np.zeros_like(counts)
+        return counts / total
+
+    def compute_df(self, documents, vocabulary):
+        vocabulary_idex = {term: index for index, term in enumerate(vocabulary)}
+        df = np.zeros(len(vocabulary), dtype=float)
+        for document in documents:
+            document_terms = set(self.tokenize(document))
+            for term in document_terms:
+                if term in vocabulary_idex:
+                    index = vocabulary_idex[term]
+                    df[index] += 1
+        return df
+
+    def compute_idf(self, df, number_of_documents):
+        df = np.asarray(df, dtype=float)
+        idf = np.zeros(len(df), dtype=float)
+        for index, document_frequency in enumerate(df):
+            if document_frequency > 0:
+                idf[index] = np.log(number_of_documents / document_frequency)
+        return idf
+
+    def compute_tfidf(self, tf, idf):
+        tf = np.asanyarray(tf, dtype=float)
+        idf = np.asanyarray(idf, dtype=float)
+
+        return tf * idf
+    
+    def cosine_similarity(self, x, y):
+        x = np.asarray(x, dtype=float)
+        y = np.asarray(y, dtype=float)
+
+        norm_x = np.linalg.norm(x)
+        norm_y = np.linalg.norm(y)
+
+        if norm_x == 0 or norm_y == 0:
+            return 0.0
+
+        return float(np.dot(x, y) / (norm_x * norm_y))
 
 
-def build_vocabulary(documents):
-    tokens = set()
-    for doc in documents:
-        tokens.update(re.findall(r'\b\w+\b', doc.lower()))
-    return sorted(tokens)
 
 
-def compute_counts(document, vocabulary):
-    tokens = re.findall(r'\b\w+\b', document.lower())
-    counts = np.array([tokens.count(term) for term in vocabulary])
-    return counts
+class SimpleBPE:
+    TOKEN_PATTERN = re.compile(r"\w+|[^\w\s]", re.UNICODE)
 
+    def __init__(
+        self,
+        num_merges=100,
+        min_frequency=1,
+        end_of_word="</w>",
+        lowercase=True,
+        unk_token="<unk>",
+    ):
+        if num_merges < 0:
+            raise ValueError("num_merges must be non-negative")
+        if min_frequency < 1:
+            raise ValueError("min_frequency must be at least 1")
 
-def compute_tf(counts):
-    total = np.sum(counts)
-    return counts / total
+        self.num_merges = num_merges
+        self.min_frequency = min_frequency
+        self.end_of_word = end_of_word
+        self.lowercase = lowercase
+        self.unk_token = unk_token
 
+        self.merges = []
+        self.merge_ranks = {}
+        self.word_frequency = defaultdict(int)
+        self.current_vocab = defaultdict(int)
+        self.base_symbols = set()
+        self.vocab = {}
+        self.id_to_token = {}
+        self.is_fitted = False
 
-def compute_idf(documents, vocabulary):
-    N = len(documents)
-    idf = []
-    for term in vocabulary:
-        df = 0
-        for doc in documents:
-            tokens = re.findall(r'\b\w+\b', doc.lower())
-            if term in tokens:
-                df += 1
-        idf_value = math.log(N / df)
-        idf.append(idf_value)
-    return idf
+    def normalize_text(self, text):
+        if not isinstance(text, str):
+            raise TypeError("text must be a string")
 
+        text = unicodedata.normalize("NFC", text)
+        if self.lowercase:
+            text = text.lower()
+        return " ".join(text.split())
 
-def compute_tfidf(tf, idf):
-    return [tf[i] * idf[i] for i in range(len(tf))]
+    def _words_from_corpus(self, corpus):
+        if isinstance(corpus, str):
+            corpus = [corpus]
 
+        for document in corpus:
+            if not isinstance(document, str):
+                raise TypeError("corpus must contain only strings")
+            normalized = self.normalize_text(document)
+            yield from self.TOKEN_PATTERN.findall(normalized)
 
-def cosine_similarity(x, y):
-    dot = sum(x[i] * y[i] for i in range(len(x)))
-    norm_x = sum(xi ** 2 for xi in x) ** 0.5
-    norm_y = sum(yi ** 2 for yi in y) ** 0.5
-    if norm_x == 0 or norm_y == 0:
-        return 0.0
-    return dot / (norm_x * norm_y)
+    def build_word_frequency(self, corpus):
+        word_frequency = defaultdict(int)
+        for word in self._words_from_corpus(corpus):
+            word_frequency[word] += 1
+        return word_frequency
 
+    def initialize_vocab(self, word_frequency):
+        current_vocab = defaultdict(int)
+        base_symbols = set()
 
-# ============================================================
-# PHẦN 1: CHẠY THỬ + IN KẾT QUẢ STUDENT IMPLEMENTATION
-# ============================================================
-print("=" * 60)
-print("STUDENT IMPLEMENTATION")
-print("=" * 60)
+        for word, frequency in word_frequency.items():
+            symbols = tuple(word) + (self.end_of_word,)
+            current_vocab[symbols] += frequency
+            base_symbols.update(symbols)
+        return current_vocab, base_symbols
 
-documents = ["cat eats fish", "dog eats fish", "cat likes fish"]
-vocab = build_vocabulary(documents)
-print("Vocabulary:      ", vocab)
+    @staticmethod
+    def get_pair_statistics(current_vocab):
+        pair_frequency = defaultdict(int)
 
-counts_d1 = compute_counts(documents[0], vocab)
-print("Counts D1:       ", counts_d1)
+        for symbols, frequency in current_vocab.items():
+            for index in range(len(symbols) - 1):
+                pair = (symbols[index], symbols[index + 1])
+                pair_frequency[pair] += frequency
 
-tf_d1 = compute_tf(counts_d1)
-print("TF D1:           ", np.round(tf_d1, 4))
+        return pair_frequency
 
-idf = compute_idf(documents, vocab)
-print("IDF:             ", np.round(idf, 4))
+    @staticmethod
+    def merge_sequence(symbols, pair):
+        first, second = pair
+        result = []
+        index = 0
 
-tfidf_d1 = compute_tfidf(tf_d1, idf)
-print("TF-IDF D1:       ", np.round(tfidf_d1, 4))
+        while index < len(symbols):
+            if (index + 1 < len(symbols) and symbols[index] == first and symbols[index + 1] == second):
+                result.append(first + second)
+                index += 2
+            else:
+                result.append(symbols[index])
+                index += 1
 
-sim = cosine_similarity([1, 1, 1], [1, 1, 0])
-print("Cosine sim [1,1,1] vs [1,1,0]:", round(sim, 4))
+        return tuple(result)
 
+    def merge_vocab(self, current_vocab, pair):
+        new_vocab = defaultdict(int)
 
-# ============================================================
-# PHẦN 2: UNIT TESTS (assert) — yêu cầu mục 8.4
-# ============================================================
-print("\n" + "=" * 60)
-print("UNIT TESTS")
-print("=" * 60)
+        for symbols, frequency in current_vocab.items():
+            merged_symbols = self.merge_sequence(symbols, pair)
+            new_vocab[merged_symbols] += frequency
 
-assert vocab == ['cat', 'dog', 'eats', 'fish', 'likes'], "Sai vocabulary"
-print("[PASS] build_vocabulary")
+        return new_vocab
 
-assert list(counts_d1) == [1, 0, 1, 1, 0], "Sai count vector D1"
-print("[PASS] compute_counts")
+    @staticmethod
+    def select_best_pair(pair_frequency):
+        if not pair_frequency:
+            return None, 0
 
-assert abs(tf_d1[0] - 1/3) < 1e-9, "Sai tf(cat, D1)"
-assert abs(sum(tf_d1) - 1.0) < 1e-9, "Tổng TF phải bằng 1"
-print("[PASS] compute_tf")
+        best_pair, best_count = max(
+            pair_frequency.items(),
+            key=lambda item: (item[1], item[0]),
+        )
+        return best_pair, best_count
 
-assert abs(idf[3] - 0.0) < 1e-9, "idf(fish) phải = 0 vì df=N"
-print("[PASS] compute_idf")
+    def train_bpe(self, corpus):
+        self.merges = []
+        self.merge_ranks = {}
+        self.word_frequency = self.build_word_frequency(corpus)
+        self.current_vocab, self.base_symbols = self.initialize_vocab(
+            self.word_frequency
+        )
 
-assert abs(tfidf_d1[3] - 0.0) < 1e-9, "tfidf(fish, D1) phải = 0"
-print("[PASS] compute_tfidf")
+        for _ in range(self.num_merges):
+            pair_frequency = self.get_pair_statistics(self.current_vocab)
+            best_pair, best_count = self.select_best_pair(pair_frequency)
 
-assert abs(sim - 0.8165) < 1e-3, "Sai cosine similarity"
-print("[PASS] cosine_similarity")
+            if best_pair is None or best_count < self.min_frequency:
+                break
 
-print("\nAll unit tests passed!")
+            self.merge_ranks[best_pair] = len(self.merges)
+            self.merges.append(best_pair)
+            self.current_vocab = self.merge_vocab(self.current_vocab, best_pair)
 
+        self.build_token_vocabulary()
+        self.is_fitted = True
+        return self.merges, self.current_vocab, self.base_symbols
 
-# ============================================================
-# PHẦN 3: SO SÁNH VỚI THƯ VIỆN (sklearn) — yêu cầu mục 8.5
-# ============================================================
-print("\n" + "=" * 60)
-print("SO SÁNH: STUDENT vs SKLEARN (default settings)")
-print("=" * 60)
+    def fit(self, corpus):
+        self.train_bpe(corpus)
+        return self
 
-vectorizer_default = TfidfVectorizer(token_pattern=r'\b\w+\b')
-tfidf_default = vectorizer_default.fit_transform(documents)
+    def _check_fitted(self):
+        if not self.is_fitted:
+            raise RuntimeError("Call fit() or train_bpe() before encoding text")
 
-print("Sklearn vocabulary:", list(vectorizer_default.get_feature_names_out()))
-print("Sklearn TF-IDF D1: ", np.round(tfidf_default.toarray()[0], 4))
-print("Student TF-IDF D1: ", np.round(tfidf_d1, 4))
-print(">> Khác nhau do: sklearn mặc định dùng IDF smoothing + L2 normalization")
+    def encode_word(self, word):
+        self._check_fitted()
+        if not isinstance(word, str):
+            raise TypeError("word must be a string")
 
+        tokens = list(word) + [self.end_of_word]
 
-print("\n" + "=" * 60)
-print("SO SÁNH: STUDENT vs SKLEARN (tắt smoothing + normalization)")
-print("=" * 60)
+        while len(tokens) > 1:
+            pairs = list(zip(tokens, tokens[1:]))
+            candidate = min(pairs,key=lambda pair: self.merge_ranks.get(pair, float("inf")),)
+            if candidate not in self.merge_ranks:
+                break
 
-vectorizer_matched = TfidfVectorizer(
-    token_pattern=r'\b\w+\b',
-    norm=None,          # tắt L2 normalization
-    smooth_idf=False,   # dùng công thức idf = log(N/df) giống student
-)
-tfidf_matched = vectorizer_matched.fit_transform(documents)
+            first, second = candidate
+            merged_tokens = []
+            index = 0
 
-print("Sklearn vocabulary:", list(vectorizer_matched.get_feature_names_out()))
-print("Sklearn TF-IDF D1: ", np.round(tfidf_matched.toarray()[0], 4))
-print("Student TF-IDF D1: ", np.round(tfidf_d1, 4))
+            while index < len(tokens):
+                if (index + 1 < len(tokens) and tokens[index] == first and tokens[index + 1] == second):
+                    merged_tokens.append(first + second)
+                    index += 2
+                else:
+                    merged_tokens.append(tokens[index])
+                    index += 1
+            tokens = merged_tokens
+        return tokens
 
-is_match = np.allclose(tfidf_matched.toarray()[0], tfidf_d1, atol=1e-4)
-print(">> Khớp nhau sau khi đồng bộ convention?", is_match)
+    def tokenize_text(self, text):
+        self._check_fitted()
+        normalized = self.normalize_text(text)
+        tokens = []
+
+        for word in self.TOKEN_PATTERN.findall(normalized):
+            tokens.extend(self.encode_word(word))
+
+        return tokens
+
+    def build_token_vocabulary(self, tokens=None):
+        if tokens is None:
+            if not self.current_vocab:
+                raise RuntimeError("Train the tokenizer before building its vocabulary")
+            unique_tokens = {
+                token
+                for symbol_sequence in self.current_vocab
+                for token in symbol_sequence
+            }
+        else:
+            unique_tokens = set(tokens)
+        if self.unk_token is not None:
+            unique_tokens.add(self.unk_token)
+
+        ordered_tokens = sorted(unique_tokens)
+        self.vocab = {token: index for index, token in enumerate(ordered_tokens)}
+        self.id_to_token = {index: token for token, index in self.vocab.items()}
+        return self.vocab
+
+    def encode(self, text):
+        tokens = self.tokenize_text(text)
+        unk_id = self.vocab.get(self.unk_token)
+        ids = []
+
+        for token in tokens:
+            if token in self.vocab:
+                ids.append(self.vocab[token])
+            elif unk_id is not None:
+                ids.append(unk_id)
+            else:
+                raise ValueError(
+                    f"Token {token!r} is not in the vocabulary and no unk token exists"
+                )
+        return ids
+
+    def decode(self, ids):
+        self._check_fitted()
+        try:
+            tokens = [self.id_to_token[index] for index in ids]
+        except KeyError as error:
+            raise ValueError(f"Unknown token ID: {error.args[0]}") from error
+        text = "".join(tokens)
+        return text.replace(self.end_of_word, " ").strip()
