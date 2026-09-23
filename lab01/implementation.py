@@ -1,6 +1,5 @@
-import math
 import re
-from collections import Counter, defaultdict
+from collections import defaultdict
 import numpy as np
 import unicodedata
 
@@ -39,20 +38,20 @@ class SimpleTfidf:
         }
 
     def compute_tf(self, counts):
-        counts = np.asanyarray(counts, dtype=float)
+        counts = np.asarray(counts, dtype=float)
         total = counts.sum()
         if total == 0:
             return np.zeros_like(counts)
         return counts / total
 
     def compute_df(self, documents, vocabulary):
-        vocabulary_idex = {term: index for index, term in enumerate(vocabulary)}
+        vocabulary_index = {term: index for index, term in enumerate(vocabulary)}
         df = np.zeros(len(vocabulary), dtype=float)
         for document in documents:
             document_terms = set(self.tokenize(document))
             for term in document_terms:
-                if term in vocabulary_idex:
-                    index = vocabulary_idex[term]
+                if term in vocabulary_index:
+                    index = vocabulary_index[term]
                     df[index] += 1
         return df
 
@@ -65,8 +64,8 @@ class SimpleTfidf:
         return idf
 
     def compute_tfidf(self, tf, idf):
-        tf = np.asanyarray(tf, dtype=float)
-        idf = np.asanyarray(idf, dtype=float)
+        tf = np.asarray(tf, dtype=float)
+        idf = np.asarray(idf, dtype=float)
 
         return tf * idf
     
