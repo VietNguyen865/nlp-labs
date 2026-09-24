@@ -32,7 +32,8 @@ lab01/
 ├── implementation.py
 ├── experiments.ipynb
 ├── results.csv
-└── reflection.md
+├── reflection.md
+└── images/
 ```
 
 | File | Nội dung |
@@ -41,9 +42,10 @@ lab01/
 | `calculations.md` | Các bài tính tay về count vector, TF, IDF, TF-IDF và cosine similarity |
 | `prediction.md` | Các prediction trước khi quan sát corpus |
 | `implementation.py` | Cài đặt TF-IDF, cosine similarity, sparse counting và SimpleBPE |
-| `experiments.ipynb` | Các thí nghiệm Part D–H và phân tích kết quả tìm kiếm |
+| `experiments.ipynb` | Các thí nghiệm Part D–J, tìm kiếm và phân tích lỗi |
 | `results.csv` | Top-K retrieval results và các metric đánh giá |
-| `reflection.md` | Reflection, limitations, failure cases và khai báo sử dụng AI |
+| `reflection.md` | Reflection, limitations, failure cases, Part J và khai báo sử dụng AI |
+| `images/` | Ảnh bài tính tay và prediction trước thực nghiệm |
 
 ## 3. Cài đặt cốt lõi
 
@@ -166,7 +168,7 @@ Các output thực nghiệm hiện đang được ghi nhận:
 | Matrix sparsity | 0.999611 | 0.999484 | 0.959530 |
 | OOV rate | 0.000000 | 0.000000 | 0.000000 |
 
-Kết quả Part H hiện tại:
+Kết quả Part H của baseline `SimpleTfidf` hiện tại:
 
 ```text
 P@5:      0.2400
@@ -174,9 +176,18 @@ Recall@5: 0.0095
 MRR:      0.4667
 ```
 
-Các giá trị trên cần được cập nhật sau khi chạy lại toàn bộ notebook, đặc biệt
-sau khi thay đổi cách xây dựng stopword của Pipeline B hoặc evaluation query
-set.
+Kết quả so sánh A/B/C được ghi trong `results.csv`:
+
+| Pipeline | P@5 | Recall@5 | MRR |
+|---|---:|---:|---:|
+| Pipeline A | 0.200000 | 0.007962 | 0.300000 |
+| Pipeline B | 0.240000 | 0.009374 | 0.540000 |
+| Pipeline C | 0.000000 | 0.000000 | 0.000000 |
+
+Hai nhóm số liệu không mâu thuẫn: Part H dùng baseline index riêng, còn
+`results.csv` đánh giá từng pipeline trên cùng năm query. Pipeline C có kết quả
+zero trong thí nghiệm này vì relevance labels được tạo từ lexical overlap ở
+mức word token, trong khi Pipeline C sử dụng subword tokenization.
 
 ## 8. Hướng dẫn chạy lại
 
@@ -191,9 +202,9 @@ Sau đó thực hiện:
 1. Đặt file `c4-train.00000-of-01024-30K.json.gz` trong thư mục `lab01`.
 2. Mở `experiments.ipynb` bằng Jupyter Notebook hoặc JupyterLab.
 3. Chạy toàn bộ các cell theo thứ tự từ đầu đến cuối.
-4. Chạy cell export cuối cùng để tạo `results.csv`.
-5. Kiểm tra kết quả retrieval và cập nhật `reflection.md` bằng các metric và
-   failure cases cuối cùng.
+4. Chạy cell export kết quả để tạo `results.csv`.
+5. Kiểm tra retrieval, Part I, Part J và cập nhật `reflection.md` nếu thay đổi
+   corpus, query hoặc cách tạo relevance labels.
 
 Đường dẫn dataset được khai báo ở phần đầu notebook và cần được cập nhật nếu
 project được chuyển sang máy tính khác.

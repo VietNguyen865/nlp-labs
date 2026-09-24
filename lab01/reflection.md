@@ -1,38 +1,33 @@
 # Reflection
 
-Prediction về quy mô vocabulary và sparsity nhìn chung đúng một phần. Corpus gồm
-30.000 documents tạo ra vocabulary lớn ở word-level: 193.837 terms trong
-Pipeline D, 473.388 terms trong Pipeline A và 193.332 terms trong Pipeline B.
-TF-IDF matrix cũng rất sparse, với tỷ lệ zero entries xấp xỉ 99.9%.
+Dự đoán về vocabulary lớn và ma trận thưa nhìn chung phù hợp với kết quả. Với
+30.000 documents, Pipeline A có 473.388 terms, Pipeline B có 193.332 terms và
+Pipeline C có 2.693 subword tokens. Tỷ lệ zero của Pipeline A và B xấp xỉ
+99,9%, trong khi Pipeline C là 95,953%.
 
-Prediction sai quan trọng nhất là giả định các documents đứng đầu kết quả tìm
-kiếm sẽ gần nghĩa nhất với query. Kết quả thực nghiệm cho thấy TF-IDF chủ yếu
-dựa trên lexical overlap. Ví dụ, với query “transformer language model”,
-document đứng đầu nói về transformer trong mạch điện và không liên quan đến
-mô hình ngôn ngữ. Điều này cho thấy cosine similarity có thể ưu tiên một term
-riêng lẻ có trọng số cao thay vì đánh giá toàn bộ ngữ nghĩa của document.
+Dự đoán sai quan trọng nhất là các documents đứng đầu sẽ luôn gần nghĩa nhất
+với query. Với query `transformer language model`, document đứng đầu nói về
+transformer trong mạch điện. TF-IDF chỉ khai thác lexical overlap và cosine
+similarity, nên không phân biệt được các nghĩa khác nhau của cùng một term.
 
-Kết quả bất ngờ nhất là Pipeline C có vocabulary nhỏ nhất, chỉ gồm 2.693
-subword tokens, nhưng average tokens/document lại cao nhất, khoảng 1.260,74.
-Do đó, Pipeline C có matrix sparsity thấp hơn Pipeline A và B
-(0,959530 so với 0,999611 và 0,999484). Vocabulary nhỏ hơn không đồng nghĩa
-với matrix sparse hơn.
+Kết quả bất ngờ nhất là Pipeline C có vocabulary nhỏ nhất nhưng average
+tokens/document cao nhất, khoảng 1.260,74. Vì vậy vocabulary nhỏ hơn không
+đồng nghĩa với matrix sparse hơn.
 
-Experiment cung cấp evidence mạnh nhất là preprocessing ablation trong Part F.
-Thí nghiệm này cho thấy rõ preprocessing là một modeling decision: thay đổi
-tokenizer, punctuation handling, stopword removal và subword tokenization làm
-thay đổi vocabulary size, số token trung bình và sparsity.
+Evidence mạnh nhất đến từ preprocessing ablation trong Part F. Việc thay đổi
+tokenizer, xử lý punctuation, stopword removal và subword tokenization làm
+thay đổi rõ rệt vocabulary, số token và sparsity. Baseline Part H đạt
+P@5 = 0,2400, Recall@5 = 0,0095 và MRR = 0,4667. Trong đánh giá A/B/C lưu ở
+`results.csv`, Pipeline B có MRR cao nhất là 0,5400; Pipeline C đạt 0 vì
+relevance labels được tạo theo word-level lexical overlap, không phù hợp trực
+tiếp với subword representation.
 
-Failure case quan trọng nhất là việc query “transformer language model” trả về
-document về mạch điện. Nguyên nhân là hệ thống nhận diện từ khóa “transformer”
-nhưng không mô hình hóa quan hệ ngữ nghĩa giữa “transformer”, “language” và
-“model”. P@5 = 0,1500 và Recall@5 = 0,0071 cũng cho thấy khả năng truy hồi còn
-hạn chế. Tuy nhiên, các metric này đang dùng pseudo-relevance labels dựa trên
-lexical overlap nên cần được diễn giải thận trọng.
+Failure case quan trọng nhất là query về `transformer`. Đây không phải lỗi của
+công thức TF, IDF hay cosine similarity mà là giới hạn của lexical
+representation. Nếu xây dựng lại search engine, em sẽ giữ sparse inverted index
+nhưng bổ sung relevance labels thủ công, thử BM25 và dùng dense semantic
+embeddings hoặc contextual Transformer representation để xử lý ngữ nghĩa,
+đồng nghĩa và ngữ cảnh.
 
-Nếu xây dựng lại search engine, em sẽ giữ sparse inverted index nhưng bổ sung
-document norms được tính trước, đánh giá bằng relevance labels thủ công và
-thử BM25 hoặc dense semantic embeddings để xử lý từ đồng nghĩa và ngữ cảnh.
-
-AI được sử dụng để giải thích yêu cầu bài lab, hỗ trợ debug Python, đề xuất
-cấu trúc TF-IDF sparse index, kiểm tra công thức và tổ chức thí nghiệm
+AI được sử dụng để giải thích yêu cầu, hỗ trợ debug, kiểm tra công thức,
+đề xuất sparse-index optimization và tổ chức thí nghiệm.
