@@ -1,0 +1,13 @@
+Result type,Model,Train PPL,Valid PPL,Test PPL,Context,Used model,Context count in train,Prediction,Prediction probability,Most common actual,Prediction appears in actuals,Matches most common actual
+Experiment 2 perplexity,Bigram MLE,192.85195946891324,inf,inf,,,,,,,,
+Experiment 2 perplexity,Bigram Laplace,6329.305559572005,8330.499754290353,8337.019739427837,,,,,,,,
+Experiment 2 perplexity,Trigram MLE,16.46347828713256,inf,inf,,,,,,,,
+Experiment 2 perplexity,Trigram Laplace,31476.1378285504,52288.08294225979,52389.11535695111,,,,,,,,
+Experiment 3 perplexity,Unigram,2149.186167899676,2267.1985620931896,2269.9851330373567,,,,,,,,
+Experiment 3 perplexity,Bigram,6329.305559572005,8330.499754290353,8337.019739427837,,,,,,,,
+Experiment 3 perplexity,Trigram,31476.1378285504,52288.08294225979,52389.11535695111,,,,,,,,
+Next-word prediction,,,,,the cat,3-gram,70.0,box,0.05714285714285714,family,False,False
+Next-word prediction,,,,,natural language,3-gram,12.0,processing,0.4166666666666667,analysis,True,False
+Next-word prediction,,,,,machine learning,3-gram,75.0,and,0.13333333333333333,portfolio,True,False
+Next-word prediction,,,,,in the,3-gram,37139.0,world,0.02089447750343305,world,True,True
+Next-word prediction,,,,,one of,3-gram,6358.0,the,0.599087763447625,the,True,True
