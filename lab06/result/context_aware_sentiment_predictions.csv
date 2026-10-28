@@ -1,0 +1,4 @@
+Text,Reference label,Prediction,Correct,P(negative),P(positive),Confidence,Unknown tokens
+I like this movie.,positive,negative,False,0.9401908,0.05980923,0.9401907920837402,0
+I do not like this movie.,negative,negative,True,0.9947515,0.0052484744,0.994751513004303,0
+"I thought this movie would be bad, but it was actually excellent.",positive,negative,False,0.6307987,0.36920127,0.6307986974716187,0
