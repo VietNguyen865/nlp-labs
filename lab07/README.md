@@ -18,7 +18,6 @@ Phần core không sử dụng `TransformerEncoderLayer`.
 ```text
 lab07/
 ├── README.md
-├── requirements.txt
 ├── calculations.pdf
 ├── prediction.pdf
 ├── error_analysis.pdf
@@ -66,7 +65,7 @@ nlp-labs/
 Yêu cầu Python 3.10 trở lên. Từ thư mục `lab07`, cài thư viện và mở Jupyter:
 
 ```bash
-python -m pip install -r requirements.txt
+python -m pip install torch numpy pandas scikit-learn matplotlib ipykernel jupyterlab
 jupyter lab transformer_classification.ipynb
 ```
 
