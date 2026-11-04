@@ -1,0 +1,7 @@
+{
+  "architecture": "Transformer",
+  "heads": 4,
+  "max_length": 128,
+  "pooling": "mean",
+  "use_pe": true
+}

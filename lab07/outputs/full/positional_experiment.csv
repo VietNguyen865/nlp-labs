@@ -1,0 +1,5 @@
+﻿sentence,use_pe,aligned_max_abs_difference,mean_pool_L2_distance
+I love NLP,False,2.384185791015625e-07,1.901449593333382e-07
+I love NLP,True,1.5279617309570312,0.2904694974422455
+dog bites man,False,2.384185791015625e-07,1.901449593333382e-07
+dog bites man,True,1.5279617309570312,0.2904694974422455

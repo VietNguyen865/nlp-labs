@@ -1,0 +1,9 @@
+Mode=full; samples={'train': 29746, 'validation': 9916, 'test': 9916}; epochs=10; seed=2026.
+Reference test accuracy=0.8463, F1=0.8509.
+Reference checkpoint epoch=3; validation loss=0.3746.
+Fixed reference: Transformer 4 heads, 128 content tokens, PE, masked mean pooling.
+No-PE permutation invariance checked on toy and trained classifier; accuracy is measured separately.
+Attention entropy and similarity describe one input, not linguistic head identities or causal explanations.
+Error flags are heuristic; human interpretation is left blank for manual review.
+Full training is required for a full-dataset report when current mode is quick.
+Single-seed results; repeat multiple seeds before claiming a robust ranking.

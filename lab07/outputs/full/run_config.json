@@ -1,0 +1,27 @@
+{
+  "mode": "full",
+  "seed": 2026,
+  "epochs": 10,
+  "batch_size": 64,
+  "d_model": 128,
+  "d_ff": 256,
+  "layers": 1,
+  "learning_rate": 0.001,
+  "dropout": 0.1,
+  "optimizer": "Adam",
+  "device": "cpu",
+  "python": "3.10.8",
+  "torch": "2.1.0+cpu",
+  "pandas": "2.3.3",
+  "numpy": "1.26.4",
+  "sklearn": "1.7.2",
+  "vocabulary": 20000,
+  "split_samples": {
+    "train": 29746,
+    "validation": 9916,
+    "test": 9916
+  },
+  "data_hash": "a9f0947344939aa2e12440a47773e4f84ac7c04f0199595a3a533a8a2cfb4525",
+  "source_hash": "43f369840904106f5a4548fdf39a61ba00246fca24def71d177bf13cd3e2d845",
+  "selection": "minimum validation loss; fixed 0.5 threshold; fixed reference model"
+}

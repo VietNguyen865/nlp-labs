@@ -1,0 +1,8 @@
+﻿stage,shape
+Input / projected Q K V,"(B, T, d_model)"
+Split Q K V,"(B, heads, T, d_model / heads)"
+Scores / attention weights,"(B, heads, T, T)"
+Per-head context,"(B, heads, T, d_model / heads)"
+Merged attention / norm1,"(B, T, d_model)"
+FFN hidden,"(B, T, d_ff)"
+FFN output / norm2,"(B, T, d_model)"

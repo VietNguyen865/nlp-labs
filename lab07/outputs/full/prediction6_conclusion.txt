@@ -1,0 +1,1 @@
+Prediction 6: Chưa tìm thấy phản ví dụ rõ ràng trên thiết bị và cấu hình đã thử. Kết quả chưa đủ kiểm chứng dự đoán 'Transformer không luôn nhanh hơn RNN'; cũng không chứng minh Transformer luôn nhanh hơn trên mọi độ dài/phần cứng.

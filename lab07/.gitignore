@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+backup_before_*/
+outputs/quick/
+outputs/full/checkpoints/
+outputs/full/*.pt
+outputs/full/predictions_*.csv
+outputs/full/test_error_audit.csv
